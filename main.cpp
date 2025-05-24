@@ -4,7 +4,23 @@
 
 #include "Ray.h"
 
+bool hit_sphere(const glm::vec3& center, float radius, const Ray& r) {
+    glm::vec3 oc = center - r.get_origin();
+    float a = glm::dot(r.get_direction(), r.get_direction());
+    float b = -2.0f * glm::dot(r.get_direction(), oc);
+    float c = glm::dot(oc, oc) - radius * radius;
+    float discriminant = b * b - 4 * a * c;
+
+    return discriminant >= 0.0;
+}
+
+// --------------------------------------------------------------------------
+
 glm::vec3 ray_color(Ray& r) {
+    if (hit_sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, r)) {
+        return glm::vec3(1.0f, 0.0f, 0.0f);
+    }
+
     glm::vec3 unit_direction = glm::normalize(r.get_direction());
     float a = 0.5f * (unit_direction.y + 1.0f);
     return (1.0f - a) * glm::vec3(1.0f, 1.0f, 1.0f) + a * glm::vec3(0.5f, 0.7f, 1.0f);
