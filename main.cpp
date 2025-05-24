@@ -1,24 +1,31 @@
 #include <SDL3/SDL.h>
-#include <glm/glm.hpp>
-#include <iostream>
+#include <memory>
 
-#include "Ray.h"
+#include "rt_weekend.h"
+#include "Hittable.h"
+#include "HittableList.h"
+#include "Sphere.h"
 
-bool hit_sphere(const glm::vec3& center, float radius, const Ray& r) {
+float hit_sphere(const glm::vec3& center, float radius, const Ray& r) {
     glm::vec3 oc = center - r.get_origin();
     float a = glm::dot(r.get_direction(), r.get_direction());
-    float b = -2.0f * glm::dot(r.get_direction(), oc);
+    float h = glm::dot(r.get_direction(), oc);
     float c = glm::dot(oc, oc) - radius * radius;
-    float discriminant = b * b - 4 * a * c;
+    float discriminant = h * h - a * c;
 
-    return discriminant >= 0.0;
+    if (discriminant < 0.0f) {
+        return -1.0f;
+    } else {
+        return (h - glm::sqrt(discriminant)) / a;
+    }
 }
 
 // --------------------------------------------------------------------------
 
-glm::vec3 ray_color(Ray& r) {
-    if (hit_sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, r)) {
-        return glm::vec3(1.0f, 0.0f, 0.0f);
+glm::vec3 ray_color(Ray& r, const Hittable& world) {
+    HitRecord hit_record;
+    if (world.hit(r, Interval(0.0f, INF), hit_record)) {
+        return 0.5f * (hit_record.normal + glm::vec3(1.0f));
     }
 
     glm::vec3 unit_direction = glm::normalize(r.get_direction());
@@ -29,7 +36,11 @@ glm::vec3 ray_color(Ray& r) {
 // --------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
-    float ideal_aspect_ratio = 16.0 / 9.0;
+    HittableList world;
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+
+    float ideal_aspect_ratio = 16.0f / 9.0f;
     int image_width = 400;
     int image_height = static_cast<int>(image_width / ideal_aspect_ratio);
     image_height = glm::max(1, image_height);
@@ -40,7 +51,7 @@ int main(int argc, char** argv) {
     glm::vec3 camera_center = glm::vec3(0.0f);
 
     glm::vec3 viewport_u = glm::vec3(viewport_width, 0.0f, 0.0f);
-    glm::vec3 viewport_v = glm::vec3(0, -viewport_height, 0);
+    glm::vec3 viewport_v = glm::vec3(0.0f, -viewport_height, 0.0f);
 
     glm::vec3 pixel_delta_u = viewport_u / float(image_width);
     glm::vec3 pixel_delta_v = viewport_v / float(image_height);
@@ -98,7 +109,7 @@ int main(int argc, char** argv) {
             glm::vec3 ray_direction = pixel_center - camera_center;
             Ray r(camera_center, ray_direction);
 
-            glm::vec3 pixel_color = ray_color(r);
+            glm::vec3 pixel_color = ray_color(r, world);
             pixel_color *= 255.0f;
 
             Uint32 pixel = SDL_MapRGBA(pixel_format_details, nullptr, pixel_color.r, pixel_color.g, pixel_color.b, 255);
