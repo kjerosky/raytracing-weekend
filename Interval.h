@@ -11,12 +11,13 @@ public:
     Interval(float min, float max);
     ~Interval();
 
-    float size();
-    bool contains(float value);
-    bool surrounds(float value);
+    float size() const;
+    bool contains(float value) const;
+    bool surrounds(float value) const;
+    float clamp(float value) const;
 
-    float get_min();
-    float get_max();
+    float get_min() const;
+    float get_max() const;
 
     static const Interval EMPTY;
     static const Interval UNIVERSE;

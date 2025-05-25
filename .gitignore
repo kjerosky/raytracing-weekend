@@ -1,3 +1,5 @@
 raytrace
+output.ppm
+
 *.dSYM
 .vscode

@@ -1,18 +1,49 @@
 #include "rt_weekend.h"
 
 #include <memory>
+#include <fstream>
 
 #include "Camera.h"
 #include "Hittable.h"
 #include "HittableList.h"
 #include "Sphere.h"
 
+void write_texture_to_file(SDL_Texture* texture, const SDL_PixelFormatDetails* pixel_format_details, int image_width, int image_height) {
+    std::ofstream file("output.ppm");
+    file << "P3\n";
+    file << image_width << " " << image_height << "\n";
+    file << "255\n";
+
+    Uint32* pixels;
+    int pixels_row_length;
+    SDL_LockTexture(texture, nullptr, (void**)&pixels, &pixels_row_length);
+
+    for (int i = 0; i < image_width * image_height; i++) {
+        Uint32 pixel_color = pixels[i];
+
+        Uint8 r, g, b, a;
+        SDL_GetRGBA(pixel_color, pixel_format_details, nullptr, &r, &g, &b, &a);
+
+        file << static_cast<int>(r) << " " << static_cast<int>(g) << " " << static_cast<int>(b) << "\n";
+    }
+
+    SDL_UnlockTexture(texture);
+
+    file.close();
+}
+
+// --------------------------------------------------------------------------
+
 int main(int argc, char** argv) {
+    const int REQUESTED_IMAGE_WIDTH = 400;
+    const float DESIRED_ASPECT_RATIO = 16.0f / 9.0f;
+    const int SAMPLES_PER_PIXEL = 100;
+
     HittableList world;
     world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
     world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
 
-    Camera camera(400, 16.0f / 9.0f);
+    Camera camera(REQUESTED_IMAGE_WIDTH, DESIRED_ASPECT_RATIO, SAMPLES_PER_PIXEL);
 
     int image_width = camera.get_image_width();
     int image_height = camera.get_image_height();
@@ -57,7 +88,13 @@ int main(int argc, char** argv) {
 
     // --- render ---
 
+    Uint64 render_start_timestamp = SDL_GetTicks();
     camera.render_to_texture(world, scene_texture, pixel_format_details);
+    Uint64 render_end_timestamp = SDL_GetTicks();
+
+    std::cout << "Render time (seconds): " << (render_end_timestamp - render_start_timestamp) / 1000.0f << std::endl;
+
+    write_texture_to_file(scene_texture, pixel_format_details, image_width, image_height);
 
     bool is_running = true;
     while (is_running) {

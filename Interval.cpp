@@ -27,30 +27,36 @@ Interval::~Interval() {
 
 // --------------------------------------------------------------------------
 
-float Interval::size() {
+float Interval::size() const {
     return max - min;
 }
 
 // --------------------------------------------------------------------------
 
-bool Interval::contains(float value) {
+bool Interval::contains(float value) const {
     return min <= value && value <= max;
 }
 
 // --------------------------------------------------------------------------
 
-bool Interval::surrounds(float value) {
+bool Interval::surrounds(float value) const {
     return min < value && value < max;
 }
 
 // --------------------------------------------------------------------------
 
-float Interval::get_min() {
+float Interval::clamp(float value) const {
+    return glm::clamp(value, min, max);
+}
+
+// --------------------------------------------------------------------------
+
+float Interval::get_min() const {
     return min;
 }
 
 // --------------------------------------------------------------------------
 
-float Interval::get_max() {
+float Interval::get_max() const {
     return max;
 }
