@@ -1,63 +1,21 @@
-#include <SDL3/SDL.h>
+#include "rt_weekend.h"
+
 #include <memory>
 
-#include "rt_weekend.h"
+#include "Camera.h"
 #include "Hittable.h"
 #include "HittableList.h"
 #include "Sphere.h"
-
-float hit_sphere(const glm::vec3& center, float radius, const Ray& r) {
-    glm::vec3 oc = center - r.get_origin();
-    float a = glm::dot(r.get_direction(), r.get_direction());
-    float h = glm::dot(r.get_direction(), oc);
-    float c = glm::dot(oc, oc) - radius * radius;
-    float discriminant = h * h - a * c;
-
-    if (discriminant < 0.0f) {
-        return -1.0f;
-    } else {
-        return (h - glm::sqrt(discriminant)) / a;
-    }
-}
-
-// --------------------------------------------------------------------------
-
-glm::vec3 ray_color(Ray& r, const Hittable& world) {
-    HitRecord hit_record;
-    if (world.hit(r, Interval(0.0f, INF), hit_record)) {
-        return 0.5f * (hit_record.normal + glm::vec3(1.0f));
-    }
-
-    glm::vec3 unit_direction = glm::normalize(r.get_direction());
-    float a = 0.5f * (unit_direction.y + 1.0f);
-    return (1.0f - a) * glm::vec3(1.0f, 1.0f, 1.0f) + a * glm::vec3(0.5f, 0.7f, 1.0f);
-}
-
-// --------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
     HittableList world;
     world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
     world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
 
-    float ideal_aspect_ratio = 16.0f / 9.0f;
-    int image_width = 400;
-    int image_height = static_cast<int>(image_width / ideal_aspect_ratio);
-    image_height = glm::max(1, image_height);
+    Camera camera(400, 16.0f / 9.0f);
 
-    float focal_length = 1.0f;
-    float viewport_height = 2.0f;
-    float viewport_width = viewport_height * image_width / image_height;
-    glm::vec3 camera_center = glm::vec3(0.0f);
-
-    glm::vec3 viewport_u = glm::vec3(viewport_width, 0.0f, 0.0f);
-    glm::vec3 viewport_v = glm::vec3(0.0f, -viewport_height, 0.0f);
-
-    glm::vec3 pixel_delta_u = viewport_u / float(image_width);
-    glm::vec3 pixel_delta_v = viewport_v / float(image_height);
-
-    glm::vec3 viewport_upper_left = camera_center - glm::vec3(0.0f, 0.0f, focal_length) - viewport_u / 2.0f - viewport_v / 2.0f;
-    glm::vec3 pixel_00_location = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
+    int image_width = camera.get_image_width();
+    int image_height = camera.get_image_height();
 
     // --- sdl setup ---
 
@@ -99,25 +57,7 @@ int main(int argc, char** argv) {
 
     // --- render ---
 
-    Uint32* scene_pixels;
-    int scene_pixels_row_length;
-    SDL_LockTexture(scene_texture, nullptr, (void**)&scene_pixels, &scene_pixels_row_length);
-
-    for (int y = 0; y < image_height; y++) {
-        for (int x = 0; x < image_width; x++) {
-            glm::vec3 pixel_center = pixel_00_location + (static_cast<float>(x) * pixel_delta_u) + (static_cast<float>(y) * pixel_delta_v);
-            glm::vec3 ray_direction = pixel_center - camera_center;
-            Ray r(camera_center, ray_direction);
-
-            glm::vec3 pixel_color = ray_color(r, world);
-            pixel_color *= 255.0f;
-
-            Uint32 pixel = SDL_MapRGBA(pixel_format_details, nullptr, pixel_color.r, pixel_color.g, pixel_color.b, 255);
-            scene_pixels[y * image_width + x] = pixel;
-        }
-    }
-
-    SDL_UnlockTexture(scene_texture);
+    camera.render_to_texture(world, scene_texture, pixel_format_details);
 
     bool is_running = true;
     while (is_running) {

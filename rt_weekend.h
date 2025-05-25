@@ -7,6 +7,7 @@ const float PI = 3.1415926535897932385f;
 const float INF= std::numeric_limits<float>::infinity();
 
 #include <iostream>
+#include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 
 #include "Ray.h"

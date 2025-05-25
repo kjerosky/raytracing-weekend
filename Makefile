@@ -12,7 +12,8 @@ SOURCE_FILES = \
 	Ray.cpp \
 	Sphere.cpp \
 	HittableList.cpp \
-	Interval.cpp
+	Interval.cpp \
+	Camera.cpp
 
 $(EXECUTABLE):
 	$(CC) $(FLAGS) -o $(EXECUTABLE) $(SOURCE_FILES) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LIBRARIES)
